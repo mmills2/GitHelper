@@ -1,3 +1,5 @@
+package GitHelper;
+
 import java.util.Scanner;
 import git.tools.client.GitSubprocessClient;
 
