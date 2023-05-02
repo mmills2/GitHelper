@@ -1,0 +1,9 @@
+{
+  "java.project.referencedLibraries": [
+    "lib/**/*.jar",
+    "GitHelper/GitHubApiClient-v0.0.7.jar",
+    "GitHelper/GitSubprocessClient-v0.0.12.jar",
+    "GitHubApiClient-v0.0.7.jar",
+    "GitSubprocessClient-v0.0.12.jar"
+  ]
+}
