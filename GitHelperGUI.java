@@ -2,12 +2,16 @@ import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintWriter;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 import git.tools.client.GitSubprocessClient;
 
@@ -15,7 +19,11 @@ public class GitHelperGUI {
 
     private JFrame frame;
     private JTextField txtRepoPath;
+    private JTextField txtUsername;
+    private JPasswordField txtPassword;
+    private JTextField txtDescription;
     private JLabel lblStatus;
+    private JCheckBox chkPublic;
 
     public static void main(String[] args) {
         EventQueue.invokeLater(new Runnable() {
@@ -36,7 +44,7 @@ public class GitHelperGUI {
 
     private void initialize() {
         frame = new JFrame();
-        frame.setBounds(100, 100, 450, 300);
+        frame.setBounds(100, 100, 450, 400);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.getContentPane().setLayout(null);
 
@@ -64,21 +72,62 @@ public class GitHelperGUI {
             }
         });
 
+        JLabel lblUsername = new JLabel("GitHub username:");
+        lblUsername.setBounds(25, 95, 200, 20);
+        frame.getContentPane().add(lblUsername);
+
+        JTextField txtUsername = new JTextField();
+        txtUsername.setBounds(25, 120, 250, 20);
+        frame.getContentPane().add(txtUsername);
+        txtUsername.setColumns(10);
+
+        JLabel lblPassword = new JLabel("GitHub password:");
+        lblPassword.setBounds(25, 155, 200, 20);
+        frame.getContentPane().add(lblPassword);
+
+        JTextField txtPassword = new JTextField();
+        txtPassword.setBounds(25, 180, 250, 20);
+        frame.getContentPane().add(txtPassword);
+        txtPassword.setColumns(10);
+
+        JLabel lblDescription = new JLabel("Project description:");
+        lblDescription.setBounds(25, 215, 200, 20);
+        frame.getContentPane().add(lblDescription);
+
+        JTextField txtDescription = new JTextField();
+        txtDescription.setBounds(25, 240, 250, 20);
+        frame.getContentPane().add(txtDescription);
+        txtDescription.setColumns(10);
+
+        JLabel lblVisibility = new JLabel("Repository visibility:");
+        lblVisibility.setBounds(25, 275, 200, 20);
+        frame.getContentPane().add(lblVisibility);
+
+        String[] visibilityOptions = { "Public", "Private" };
+        JComboBox<String> cmbVisibility = new JComboBox<>(visibilityOptions);
+        cmbVisibility.setBounds(25, 300, 250, 20);
+        frame.getContentPane().add(cmbVisibility);
+
         JButton btnCreateRepo = new JButton("Create Repo");
-        btnCreateRepo.setBounds(25, 90, 150, 25);
+        btnCreateRepo.setBounds(25, 340, 150, 25);
         frame.getContentPane().add(btnCreateRepo);
         btnCreateRepo.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                createRepo();
+                String username = txtUsername.getText();
+                String password = txtPassword.getText();
+                String description = txtDescription.getText();
+                boolean isPublic = cmbVisibility.getSelectedItem().toString().equals("Public");
+
+                createRepo(username, password, description, isPublic);
             }
         });
 
         lblStatus = new JLabel("");
-        lblStatus.setBounds(25, 140, 350, 20);
+        lblStatus.setBounds(25, 380, 350, 20);
         frame.getContentPane().add(lblStatus);
     }
 
-    private void createRepo() {
+    private void createRepo(String username, String password, String description, boolean isPrivate) {
         String repoPath = txtRepoPath.getText();
         File gitIgnore = new File(repoPath, ".gitIgnore");
         File readMe = new File(repoPath, "README.md");
@@ -109,5 +158,24 @@ public class GitHelperGUI {
         gitSubprocessClient.gitCommit("initial commit");
 
         lblStatus.setText("Repo created successfully");
+
+        // Create a new GitHub repository using the given credentials and repository
+        // information
+        GitHubClient client = new GitHubClient();
+        client.setCredentials(username, password);
+
+        RepositoryService service = new RepositoryService();
+        Repository repository = new Repository();
+        repository.setName("repo name here");
+        repository.setDescription(description);
+        repository.setPrivate(isPrivate);
+
+        try {
+            service.createRepository(repository);
+            lblStatus.setText("GitHub repo created successfully");
+        } catch (IOException e) {
+            lblStatus.setText("Error creating GitHub repo");
+        }
     }
+
 }
