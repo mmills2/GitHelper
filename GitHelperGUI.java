@@ -16,8 +16,7 @@ public class GitHelperGUI extends JFrame implements ActionListener {
     private JTextField tokenField;
     private JTextField descriptionField;
     private JTextArea outputArea;
-    private JRadioButton publicButton;
-    private JRadioButton privateButton;
+    private JComboBox<String> privacyDropdown;
 
     public GitHelperGUI() {
         super("Git Helper");
@@ -54,17 +53,10 @@ public class GitHelperGUI extends JFrame implements ActionListener {
         inputPanel.add(descriptionField);
 
         JLabel privacyLabel = new JLabel("Repo Privacy:");
-        publicButton = new JRadioButton("Public");
-        privateButton = new JRadioButton("Private");
-        ButtonGroup privacyGroup = new ButtonGroup();
-        privacyGroup.add(publicButton);
-        privacyGroup.add(privateButton);
-        publicButton.setSelected(true);
-        JPanel privacyPanel = new JPanel(new GridLayout(1, 2));
-        privacyPanel.add(publicButton);
-        privacyPanel.add(privateButton);
+        String[] privacyOptions = {"Public", "Private"};
+        privacyDropdown = new JComboBox<>(privacyOptions);
         inputPanel.add(privacyLabel);
-        inputPanel.add(privacyPanel);
+        inputPanel.add(privacyDropdown);
 
         JButton createButton = new JButton("Create Repo");
         createButton.addActionListener(this);
@@ -87,7 +79,7 @@ public class GitHelperGUI extends JFrame implements ActionListener {
             String username = usernameField.getText();
             String token = tokenField.getText();
             String description = descriptionField.getText();
-            String privacy = publicButton.isSelected() ? "public" : "private"; // check which radio button is selected
+            String privacy = privacyDropdown.getSelectedItem().toString();
 
             File gitIgnore = new File(repoPath, ".gitIgnore");
             File readMe = new File(repoPath, "README.md");
@@ -109,58 +101,40 @@ public class GitHelperGUI extends JFrame implements ActionListener {
             try {
                 readMe.createNewFile();
                 PrintWriter writeReadMe = new PrintWriter(readMe);
-                writeReadMe.println("## " + repoName);
+                writeReadMe.println("# " + repoName + "\n\n" + description);
                 writeReadMe.flush();
                 writeReadMe.close();
-                outputArea.append("README file created.\n");
+                outputArea.append("README.md file created.\n");
             } catch (Exception ex) {
-                outputArea.append("Could not create README file: " + ex.getMessage() + "\n");
+                outputArea.append("Could not create README.md file: " + ex.getMessage() + "\n");
             }
-
-            // Git initial commit
-            gitSubprocessClient.gitAddAll();
-            gitSubprocessClient.gitCommit("initial commit");
-
-            // GitHub API client
             GitHubApiClient gitHubApiClient = new GitHubApiClient(username, token);
 
-            // Create the repository on GitHub
-            RequestParams createRepoParams = new RequestParams();
-            createRepoParams.addParam("name", repoName);
-            createRepoParams.addParam("description", description);
-
-            // Add privacy option to the request params
-            Object[] options = { "Public", "Private" };
-            int privacyOption = JOptionPane.showOptionDialog(null, "Select repository privacy option:",
-                    "Repository Privacy",
-                    JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, options, options[0]);
-
-            if (privacyOption == JOptionPane.YES_OPTION) {
-                createRepoParams.addParam("private", false);
-            } else {
-                createRepoParams.addParam("private", true);
+            try {
+                RequestParams requestParams = new RequestParams();
+                requestParams.addParam("name", repoName);
+                requestParams.addParam("description", description);
+                requestParams.addParam("private", privacy.equals("Private"));
+    
+                GitHubCreateRepoResponse gitHubCreateRepoResponse = gitHubApiClient.createRepo(requestParams);
+    
+                String gitHubRepoURL = gitHubCreateRepoResponse.getUrl();
+                outputArea.append("Repo created: " + gitHubRepoURL + "\n");
+    
+                gitSubprocessClient.gitAdd(".");
+                gitSubprocessClient.gitCommit("Initial commit");
+                gitSubprocessClient.gitRemoteAdd("origin", gitHubRepoURL);
+                gitSubprocessClient.gitPush("origin", "master");
+                outputArea.append("Git repo created and pushed to remote.\n");
+    
+            } catch (Exception ex) {
+                outputArea.append("Could not create repo on GitHub: " + ex.getMessage() + "\n");
             }
-
-            CreateRepoResponse createRepoResponse = gitHubApiClient.createRepo(createRepoParams);
-            outputArea.append("Repository " + repoName + " created on GitHub.\n");
-
-            // Might need to include a try catch bloch right here
-
-            // Gets GitHub repo url and adds origin to git repo
-            GetRepoInfoResponse repoInfo = gitHubApiClient.getRepoInfo(username, repoName);
-            String url = repoInfo.getUrl();
-            gitSubprocessClient.gitRemoteAdd("origin", url + ".git");
-
-            // Pushes initial commit to GitHub repo
-            gitSubprocessClient.gitPush("master");
-
-            // Giving user GitHub repo url
-            outputArea.append("Your GitHub repo URL: " + url + "\n");
         }
     }
-
+    
     public static void main(String[] args) {
         new GitHelperGUI();
     }
-
 }
+    
