@@ -16,6 +16,8 @@ public class GitHelperGUI extends JFrame implements ActionListener {
     private JTextField tokenField;
     private JTextField descriptionField;
     private JTextArea outputArea;
+    private JRadioButton publicButton;
+    private JRadioButton privateButton;
 
     public GitHelperGUI() {
         super("Git Helper");
@@ -23,7 +25,7 @@ public class GitHelperGUI extends JFrame implements ActionListener {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
-        JPanel inputPanel = new JPanel(new GridLayout(6, 2, 10, 10));
+        JPanel inputPanel = new JPanel(new GridLayout(7, 2, 10, 10));
         inputPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         JLabel pathLabel = new JLabel("Project Path:");
@@ -51,6 +53,19 @@ public class GitHelperGUI extends JFrame implements ActionListener {
         inputPanel.add(descriptionLabel);
         inputPanel.add(descriptionField);
 
+        JLabel privacyLabel = new JLabel("Repo Privacy:");
+        publicButton = new JRadioButton("Public");
+        privateButton = new JRadioButton("Private");
+        ButtonGroup privacyGroup = new ButtonGroup();
+        privacyGroup.add(publicButton);
+        privacyGroup.add(privateButton);
+        publicButton.setSelected(true);
+        JPanel privacyPanel = new JPanel(new GridLayout(1, 2));
+        privacyPanel.add(publicButton);
+        privacyPanel.add(privateButton);
+        inputPanel.add(privacyLabel);
+        inputPanel.add(privacyPanel);
+
         JButton createButton = new JButton("Create Repo");
         createButton.addActionListener(this);
         inputPanel.add(createButton);
@@ -72,6 +87,7 @@ public class GitHelperGUI extends JFrame implements ActionListener {
             String username = usernameField.getText();
             String token = tokenField.getText();
             String description = descriptionField.getText();
+            String privacy = publicButton.isSelected() ? "public" : "private"; // check which radio button is selected
 
             File gitIgnore = new File(repoPath, ".gitIgnore");
             File readMe = new File(repoPath, "README.md");
@@ -89,7 +105,6 @@ public class GitHelperGUI extends JFrame implements ActionListener {
             } catch (Exception ex) {
                 outputArea.append("Could not create .gitIgnore file: " + ex.getMessage() + "\n");
             }
-
             try {
                 readMe.createNewFile();
                 PrintWriter writeReadMe = new PrintWriter(readMe);
@@ -112,15 +127,27 @@ public class GitHelperGUI extends JFrame implements ActionListener {
             createRepoParams.addParam("name", repoName);
             createRepoParams.addParam("description", description);
 
+            // Add privacy option to the request params
+            Object[] options = { "Public", "Private" };
+            int privacyOption = JOptionPane.showOptionDialog(null, "Select repository privacy option:",
+                    "Repository Privacy",
+                    JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, options, options[0]);
+
+            if (privacyOption == JOptionPane.YES_OPTION) {
+                createRepoParams.addParam("private", false);
+            } else {
+                createRepoParams.addParam("private", true);
+            }
+
             CreateRepoResponse createRepoResponse = gitHubApiClient.createRepo(createRepoParams);
             outputArea.append("Repository " + repoName + " created on GitHub.\n");
 
-            // Might need to include a try catch bloch right here
+            // Might need to include a try catch block right here
         }
-
     }
 
     public static void main(String[] args) {
         new GitHelperGUI();
     }
+
 }
