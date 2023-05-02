@@ -121,10 +121,10 @@ public class GitHelperGUI extends JFrame implements ActionListener {
                 String gitHubRepoURL = gitHubCreateRepoResponse.getUrl();
                 outputArea.append("Repo created: " + gitHubRepoURL + "\n");
     
-                gitSubprocessClient.gitAdd(".");
+                gitSubprocessClient.gitAddFile(".");
                 gitSubprocessClient.gitCommit("Initial commit");
                 gitSubprocessClient.gitRemoteAdd("origin", gitHubRepoURL);
-                gitSubprocessClient.gitPush("origin", "master");
+                gitSubprocessClient.gitPush("origin");
                 outputArea.append("Git repo created and pushed to remote.\n");
     
             } catch (Exception ex) {
