@@ -1,21 +1,23 @@
-package GitHelper;
+//package GitHelper;
 
 import git.tools.client.GitSubprocessClient;
+import github.tools.client.RequestParams;
+import github.tools.client.GitHubApiClient;
+import github.tools.responseObjects.*;
 import java.io.File;
 import java.io.PrintWriter;
 import java.util.Scanner;
 
 public class gitHelper {
-
-    private static final String GITHUB_API_URL = "https://api.github.com/user/repos";
-    private static final String ACCESS_TOKEN = "your_access_token_here";
-
     public static void main(String[] args){
 
         Scanner scanner = new Scanner(System.in);
 
         System.out.println("Enter the path of project");
         String repoPath = scanner.nextLine();
+
+        System.out.println("Enter the name of your repo");
+        String repoName = scanner.nextLine();
 
         File gitIgnore = new File(repoPath,".gitIgnore");
         File readMe = new File(repoPath, "README.md");
@@ -36,17 +38,49 @@ public class gitHelper {
         try{
             readMe.createNewFile();
             PrintWriter writeReadMe = new PrintWriter(readMe);
-            writeReadMe.println("## " + "repo name here");
+            writeReadMe.println("## " + repoName);
             writeReadMe.flush();
         }
         catch(Exception e){
             System.out.println("Could not create README file");
         }
 
+        // Git initial commit
         gitSubprocessClient.gitAddAll();
         gitSubprocessClient.gitCommit("initial commit");
 
-        // create GitHub repo using API
-        System.out.println("Do you want to create the repo? y/n");
+        // Getting github username
+        System.out.println("What is your GitHub username");
+        String username = scanner.nextLine();
+
+        // Getting github token
+        System.out.println("What is your GitHub token");
+        String token = scanner.nextLine();
+
+        // Initializing github repo creation
+        GitHubApiClient gitHubApiClient = new GitHubApiClient(username, token);
+        RequestParams requestParams = new RequestParams();
+        requestParams.addParam("name", repoName);
+
+        // Getting repo description
+        System.out.println("Type a description for your repo");
+        String description = scanner.nextLine();
+        requestParams.addParam("description", description);
+
+        // Getting private or not
+        System.out.println("Would you like your repo to be private? Y/N");
+        String answer = scanner.nextLine();
+        boolean priv = false;
+        if(answer.equals("Y")){
+            priv = true;
+        }
+        else if(answer.equals("N")){
+            priv = false;
+        }
+        requestParams.addParam("private", priv);
+
+        // Creating github repo with specified parameters
+        CreateRepoResponse createRepo = gitHubApiClient.createRepo(requestParams);
+        
     }
 }
