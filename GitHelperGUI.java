@@ -1,78 +1,113 @@
-import git.tools.client.GitSubprocessClient;
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.*;
+import java.awt.EventQueue;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.PrintWriter;
-import java.util.Scanner;
+import javax.swing.JButton;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
+import git.tools.client.GitSubprocessClient;
 
+public class GitHelperGUI {
 
-public class GitHelperGUI extends JFrame implements ActionListener {
-    private JButton btnSubmit;
+    private JFrame frame;
     private JTextField txtRepoPath;
+    private JLabel lblStatus;
 
-    public GitHelperGUI() {
-        super("Git Helper");
-
-        // Set up the window
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(400, 200);
-        setLocationRelativeTo(null);
-
-        // Set up the text field and button
-        txtRepoPath = new JTextField();
-        btnSubmit = new JButton("Submit");
-        btnSubmit.addActionListener(this);
-
-        // Add components to the content pane
-        Container contentPane = getContentPane();
-        contentPane.setLayout(new BorderLayout());
-        JPanel panel = new JPanel();
-        panel.setLayout(new GridLayout(2, 1));
-        panel.add(new JLabel("Enter the path of project:"));
-        panel.add(txtRepoPath);
-        contentPane.add(panel, BorderLayout.CENTER);
-        contentPane.add(btnSubmit, BorderLayout.SOUTH);
+    public static void main(String[] args) {
+        EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                try {
+                    GitHelperGUI window = new GitHelperGUI();
+                    window.frame.setVisible(true);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
     }
 
-    public void actionPerformed(ActionEvent e) {
-        String repoPath = txtRepoPath.getText();
+    public GitHelperGUI() {
+        initialize();
+    }
 
-        File gitIgnore = new File(repoPath,".gitIgnore");
+    private void initialize() {
+        frame = new JFrame();
+        frame.setBounds(100, 100, 450, 300);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.getContentPane().setLayout(null);
+
+        JLabel lblRepoPath = new JLabel("Enter the path of project:");
+        lblRepoPath.setBounds(25, 30, 200, 20);
+        frame.getContentPane().add(lblRepoPath);
+
+        txtRepoPath = new JTextField();
+        txtRepoPath.setBounds(25, 55, 250, 20);
+        frame.getContentPane().add(txtRepoPath);
+        txtRepoPath.setColumns(10);
+
+        JButton btnBrowse = new JButton("Browse...");
+        btnBrowse.setBounds(290, 55, 100, 20);
+        frame.getContentPane().add(btnBrowse);
+        btnBrowse.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                JFileChooser fileChooser = new JFileChooser();
+                fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+                int option = fileChooser.showOpenDialog(frame);
+                if (option == JFileChooser.APPROVE_OPTION) {
+                    File file = fileChooser.getSelectedFile();
+                    txtRepoPath.setText(file.getAbsolutePath());
+                }
+            }
+        });
+
+        JButton btnCreateRepo = new JButton("Create Repo");
+        btnCreateRepo.setBounds(25, 90, 150, 25);
+        frame.getContentPane().add(btnCreateRepo);
+        btnCreateRepo.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                createRepo();
+            }
+        });
+
+        lblStatus = new JLabel("");
+        lblStatus.setBounds(25, 140, 350, 20);
+        frame.getContentPane().add(lblStatus);
+    }
+
+    private void createRepo() {
+        String repoPath = txtRepoPath.getText();
+        File gitIgnore = new File(repoPath, ".gitIgnore");
         File readMe = new File(repoPath, "README.md");
 
         GitSubprocessClient gitSubprocessClient = new GitSubprocessClient(repoPath);
         gitSubprocessClient.gitInit();
 
-        try{
+        try {
             gitIgnore.createNewFile();
             PrintWriter writeGitIgnore = new PrintWriter(gitIgnore);
-            writeGitIgnore.println("bin/\n*.class\n.project\n*.iml\n.settings/\n.classpath\n.DS_Store\n.idea/\nout\n.metadata/");
+            writeGitIgnore.println(
+                    "bin/\n*.class\n.project\n*.iml\n.settings/\n.classpath\n.DS_Store\n.idea/\nout\n.metadata/");
             writeGitIgnore.flush();
-        }
-        catch(Exception ex){
-            System.out.println("Could not create gitIgnore file");
+        } catch (Exception e) {
+            lblStatus.setText("Could not create gitIgnore file");
         }
 
-        try{
+        try {
             readMe.createNewFile();
             PrintWriter writeReadMe = new PrintWriter(readMe);
             writeReadMe.println("## " + "repo name here");
             writeReadMe.flush();
-        }
-        catch(Exception ex){
-            System.out.println("Could not create README file");
+        } catch (Exception e) {
+            lblStatus.setText("Could not create README file");
         }
 
         gitSubprocessClient.gitAddAll();
         gitSubprocessClient.gitCommit("initial commit");
 
-        JOptionPane.showMessageDialog(null, "Git repository created successfully!");
-    }
-
-    public static void main(String[] args) {
-        // Create and display the GUI
-        GitHelperGUI gui = new GitHelperGUI();
-        gui.setVisible(true);
+        lblStatus.setText("Repo created successfully");
     }
 }

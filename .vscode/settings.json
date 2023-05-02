@@ -5,5 +5,8 @@
     "GitHelper/GitSubprocessClient-v0.0.12.jar",
     "GitHubApiClient-v0.0.7.jar",
     "GitSubprocessClient-v0.0.12.jar"
-  ]
+  ],
+  "files.watcherExclude": {
+    "**/target": true
+  }
 }
