@@ -6,7 +6,7 @@ import java.io.*;
 import git.tools.client.GitSubprocessClient;
 import github.tools.client.RequestParams;
 import github.tools.client.GitHubApiClient;
-import github.tools.responseObjects.CreateRepoResponse;
+import github.tools.responseObjects.*;
 
 public class GitHelperGUI extends JFrame implements ActionListener {
 
@@ -101,6 +101,7 @@ public class GitHelperGUI extends JFrame implements ActionListener {
                 writeGitIgnore.println(
                         "bin/\n*.class\n.project\n*.iml\n.settings/\n.classpath\n.DS_Store\n.idea/\nout\n.metadata/");
                 writeGitIgnore.flush();
+                writeGitIgnore.close();
                 outputArea.append(".gitIgnore file created.\n");
             } catch (Exception ex) {
                 outputArea.append("Could not create .gitIgnore file: " + ex.getMessage() + "\n");
@@ -110,6 +111,7 @@ public class GitHelperGUI extends JFrame implements ActionListener {
                 PrintWriter writeReadMe = new PrintWriter(readMe);
                 writeReadMe.println("## " + repoName);
                 writeReadMe.flush();
+                writeReadMe.close();
                 outputArea.append("README file created.\n");
             } catch (Exception ex) {
                 outputArea.append("Could not create README file: " + ex.getMessage() + "\n");
@@ -142,7 +144,18 @@ public class GitHelperGUI extends JFrame implements ActionListener {
             CreateRepoResponse createRepoResponse = gitHubApiClient.createRepo(createRepoParams);
             outputArea.append("Repository " + repoName + " created on GitHub.\n");
 
-            // Might need to include a try catch block right here
+            // Might need to include a try catch bloch right here
+
+            // Gets GitHub repo url and adds origin to git repo
+            GetRepoInfoResponse repoInfo = gitHubApiClient.getRepoInfo(username, repoName);
+            String url = repoInfo.getUrl();
+            gitSubprocessClient.gitRemoteAdd("origin", url + ".git");
+
+            // Pushes initial commit to GitHub repo
+            gitSubprocessClient.gitPush("master");
+
+            // Giving user GitHub repo url
+            outputArea.append("Your GitHub repo URL: " + url + "\n");
         }
     }
 
